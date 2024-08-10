@@ -112,8 +112,6 @@ void exploreNeighbours(Node &currNode, vector<int> &openSet, vector<int> &closed
     for (const auto &[neighbourID, edge_weight] : neighbours)
     {
         Node &neighbourNode = nodes[neighbourID];
-        // cout << currNode.id << " neigbour: " << neighbourNode.id << endl;
-        // cout << "tantive: " << currNode.cost_to_reach + edge_weight << " neigbour_cost: " << neighbourNode.cost_to_reach << endl;
         float tentative_cost = currNode.cost_to_reach  + edge_weight;
         if (tentative_cost < neighbourNode.cost_to_reach)
         {
