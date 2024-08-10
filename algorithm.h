@@ -23,7 +23,7 @@ public:
         ; // f_score = cost_to_reach + heuristic
         this->parent = nullptr;
     }
-    Node() : id(0), x(0.0f), y(0.0f),cost_to_reach(numeric_limits<float>::max()) ,heuristic(0.0f), f_score(numeric_limits<float>::max()), parent(nullptr) {}
+    Node() : id(0), x(0.0f), y(0.0f), cost_to_reach(numeric_limits<float>::max()), heuristic(0.0f), f_score(numeric_limits<float>::max()), parent(nullptr) {}
 };
 
 int startNodeID = 1;
@@ -39,21 +39,36 @@ vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<strin
 {
     vector<int> path;
 
-    // populating the nodes and the adjList
+    /*
+        Storing the nodes in a hashMap (unordered_map) where the key is the Node ID to access
+        any node using its ID in constant time.
+        Created and adjacency list From the edges csv file to access the neighbours of a node using its ID
+    */
     unordered_map<int, Node> nodes = nodes_from_csv(nodes_csv);
     unordered_map<int, vector<pair<int, float>>> adjList = adjList_from_edges(edges_csv);
 
-    // initializng the openSet and the closedSet
-    unordered_set<int> openSet = {startNodeID}; // a vector that has the IDs of the nodes that are still to be tested
-    unordered_set<int> closedSet = {}; // a vector that has the IDs of the nodes that we've tested
+    /*
+        To keep track of the nodes we need to examine and the nodes we've already examined I used two sets.
+        I used sets because I'm going to insert, erase, and find elements in those sets, and those operation in
+        the unordered_set has an amortized time complexity of O(1) which makes them a perfect fit.
+        I have two sets that contains the IDs of the nodes, where openSet has the IDs of the nodes we need to test
+        and closedSet has the IDs of the nodes we've tested and we don't need to check them again.
+    */
+    unordered_set<int> openSet = {startNodeID};
+    unordered_set<int> closedSet = {};
 
     // the main loop implementating the algorithm
     while (!openSet.empty())
     {
-        int top_node_ID = 0; // A variable to keep track of the ID of the node we need to process next in the OpenSet
-
-        // A loop to get the index of the node to be processed next in the openSet
-        for (const auto& nodeID : openSet)
+        /*
+            From the openSet we need to find the ID of the node that has the least f_score to examine next.
+            I used a variable (top_node_ID) to store the ID of my top node which is the node with the least f_score
+            from the openSet, and used a loop to go through my set and search for the ID of the node with the least
+            f_score and assigns its ID to top_node_ID
+        */
+        int top_node_ID = *openSet.begin(); // used *openSet.begin() to initialize top_node_ID to make sure that the
+                                            // initial value of top_node_ID is a valid node ID from our openSet
+        for (const auto &nodeID : openSet)
         {
             if (nodes[nodeID].f_score < nodes[top_node_ID].f_score)
             {
@@ -63,7 +78,8 @@ vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<strin
 
         Node &currNode = nodes[top_node_ID];
 
-        if(currNode.id == goalNodeID) {
+        if (currNode.id == goalNodeID)
+        {
             return construct_path(nodes);
         }
 
@@ -72,7 +88,7 @@ vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<strin
         closedSet.emplace(top_node_ID);
         openSet.erase(top_node_ID);
     }
-    
+
     return path;
 }
 
@@ -115,7 +131,7 @@ void exploreNeighbours(Node &currNode, unordered_set<int> &openSet, unordered_se
     for (const auto &[neighbourID, edge_weight] : neighbours)
     {
         Node &neighbourNode = nodes[neighbourID];
-        float tentative_cost = currNode.cost_to_reach  + edge_weight;
+        float tentative_cost = currNode.cost_to_reach + edge_weight;
         if (tentative_cost < neighbourNode.cost_to_reach)
         {
             neighbourNode.parent = &currNode;
@@ -132,7 +148,6 @@ void exploreNeighbours(Node &currNode, unordered_set<int> &openSet, unordered_se
     }
 }
 
-
 vector<int> construct_path(unordered_map<int, Node> &nodes)
 {
     vector<int> path;
@@ -145,7 +160,6 @@ vector<int> construct_path(unordered_map<int, Node> &nodes)
     }
     path.push_back(currNode.id);
     reverse(path.begin(), path.end());
-
 
     cout << "path: ";
     for (const auto &n : path)
