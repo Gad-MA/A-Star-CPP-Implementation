@@ -11,7 +11,7 @@ vector<vector<string>> readCSV(const string &filename)
 
   while (getline(file, line))
   {
-    if (line[0] == '#' || line.empty()) // checks if the line is a comment to skip this iteration
+    if (line[0] == '#' || line.empty()) // checks if the line is a comment or empty to skip this iteration
     {
       continue;
     }
