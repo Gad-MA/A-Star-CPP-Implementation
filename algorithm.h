@@ -62,14 +62,16 @@ vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<strin
 
         Node &currNode = nodes[openSet[top_node_ID_index]];
 
+        if(currNode.id == goalNodeID) {
+            return construct_path(nodes);
+        }
+
         exploreNeighbours(currNode, openSet, closedSet, adjList[currNode.id], nodes);
 
         closedSet.push_back(openSet[top_node_ID_index]);
         openSet.erase(openSet.begin() + top_node_ID_index);
     }
-
-    path = construct_path(nodes);
-
+    
     return path;
 }
 
@@ -122,9 +124,9 @@ void exploreNeighbours(Node &currNode, vector<int> &openSet, vector<int> &closed
 
         bool neighbour_not_in_closedSet = (find(closedSet.begin(), closedSet.end(), neighbourID) == closedSet.end());
         bool neighbour_not_in_openSet = (find(openSet.begin(), openSet.end(), neighbourID) == openSet.end());
-        bool neighbour_not_goalNode = (neighbourID != goalNodeID);
+        // bool neighbour_not_goalNode = (neighbourID != goalNodeID);
 
-        if (neighbour_not_in_closedSet && neighbour_not_in_openSet && neighbour_not_goalNode)
+        if (neighbour_not_in_closedSet && neighbour_not_in_openSet)
         {
             openSet.push_back(neighbourID);
         }
