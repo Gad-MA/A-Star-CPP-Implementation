@@ -1,6 +1,7 @@
 #include <limits>
 #include <unordered_map>
 #include <algorithm>
+#include <unordered_set>
 class Node
 {
 public:
@@ -31,7 +32,7 @@ int goalNodeID = 12;
 // Declaration of functions
 unordered_map<int, Node> nodes_from_csv(vector<vector<string>> nodes_csv);
 unordered_map<int, vector<pair<int, float>>> adjList_from_edges(vector<vector<string>> edges_csv);
-void exploreNeighbours(Node &currNode, vector<int> &openSet, vector<int> &closedSet, vector<pair<int, float>> &neighbours, unordered_map<int, Node> &nodes);
+void exploreNeighbours(Node &currNode, unordered_set<int> &openSet, unordered_set<int> &closedSet, vector<pair<int, float>> &neighbours, unordered_map<int, Node> &nodes);
 vector<int> construct_path(unordered_map<int, Node> &nodes);
 
 vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<string>> nodes_csv)
@@ -43,24 +44,24 @@ vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<strin
     unordered_map<int, vector<pair<int, float>>> adjList = adjList_from_edges(edges_csv);
 
     // initializng the openSet and the closedSet
-    vector<int> openSet = {startNodeID}; // a vector that has the IDs of the nodes that are still to be tested
-    vector<int> closedSet = {}; // a vector that has the IDs of the nodes that we've tested
+    unordered_set<int> openSet = {startNodeID}; // a vector that has the IDs of the nodes that are still to be tested
+    unordered_set<int> closedSet = {}; // a vector that has the IDs of the nodes that we've tested
 
     // the main loop implementating the algorithm
     while (!openSet.empty())
     {
-        int top_node_ID_index = 0; // A variable to keep track of the index of the ID of the node we need to process next in the OpenSet
+        int top_node_ID = 0; // A variable to keep track of the ID of the node we need to process next in the OpenSet
 
         // A loop to get the index of the node to be processed next in the openSet
-        for (int i = 0, openSet_size = openSet.size(); i < openSet_size; i++)
+        for (const auto& nodeID : openSet)
         {
-            if (nodes[openSet[i]].f_score < nodes[openSet[top_node_ID_index]].f_score)
+            if (nodes[nodeID].f_score < nodes[top_node_ID].f_score)
             {
-                top_node_ID_index = i;
+                top_node_ID = nodeID;
             }
         }
 
-        Node &currNode = nodes[openSet[top_node_ID_index]];
+        Node &currNode = nodes[top_node_ID];
 
         if(currNode.id == goalNodeID) {
             return construct_path(nodes);
@@ -68,8 +69,8 @@ vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<strin
 
         exploreNeighbours(currNode, openSet, closedSet, adjList[currNode.id], nodes);
 
-        closedSet.push_back(openSet[top_node_ID_index]);
-        openSet.erase(openSet.begin() + top_node_ID_index);
+        closedSet.emplace(top_node_ID);
+        openSet.erase(top_node_ID);
     }
     
     return path;
@@ -109,7 +110,7 @@ unordered_map<int, vector<pair<int, float>>> adjList_from_edges(vector<vector<st
     return adjList;
 }
 
-void exploreNeighbours(Node &currNode, vector<int> &openSet, vector<int> &closedSet, vector<pair<int, float>> &neighbours, unordered_map<int, Node> &nodes)
+void exploreNeighbours(Node &currNode, unordered_set<int> &openSet, unordered_set<int> &closedSet, vector<pair<int, float>> &neighbours, unordered_map<int, Node> &nodes)
 {
     for (const auto &[neighbourID, edge_weight] : neighbours)
     {
@@ -122,13 +123,11 @@ void exploreNeighbours(Node &currNode, vector<int> &openSet, vector<int> &closed
             neighbourNode.f_score = tentative_cost + neighbourNode.heuristic;
         }
 
-        bool neighbour_not_in_closedSet = (find(closedSet.begin(), closedSet.end(), neighbourID) == closedSet.end());
-        bool neighbour_not_in_openSet = (find(openSet.begin(), openSet.end(), neighbourID) == openSet.end());
-        // bool neighbour_not_goalNode = (neighbourID != goalNodeID);
+        bool neighbour_not_in_closedSet = (closedSet.find(neighbourID) == closedSet.end());
 
-        if (neighbour_not_in_closedSet && neighbour_not_in_openSet)
+        if (neighbour_not_in_closedSet)
         {
-            openSet.push_back(neighbourID);
+            openSet.emplace(neighbourID);
         }
     }
 }
