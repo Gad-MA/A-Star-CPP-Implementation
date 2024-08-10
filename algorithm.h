@@ -145,6 +145,7 @@ vector<int> construct_path(unordered_map<int, Node> &nodes)
     path.push_back(currNode.id);
     reverse(path.begin(), path.end());
 
+
     cout << "path: ";
     for (const auto &n : path)
     {
