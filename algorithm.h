@@ -32,7 +32,7 @@ int goalNodeID = 12;
 // Declaration of functions
 unordered_map<int, Node> nodes_from_csv(vector<vector<string>> nodes_csv);
 unordered_map<int, vector<pair<int, float>>> adjList_from_edges(vector<vector<string>> edges_csv);
-void exploreNeighbours(Node &currNode, unordered_set<int> &openSet, unordered_set<int> &closedSet, vector<pair<int, float>> &neighbours, unordered_map<int, Node> &nodes);
+void exploreNeighbours(Node &currNode, unordered_set<int> &openSet, vector<pair<int, float>> &neighbours, unordered_map<int, Node> &nodes);
 vector<int> construct_path(unordered_map<int, Node> &nodes);
 
 vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<string>> nodes_csv)
@@ -42,20 +42,21 @@ vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<strin
     /*
         Storing the nodes in a hashMap (unordered_map) where the key is the Node ID to access
         any node using its ID in constant time.
-        Created and adjacency list From the edges csv file to access the neighbours of a node using its ID
     */
     unordered_map<int, Node> nodes = nodes_from_csv(nodes_csv);
+
+    /*
+        Created and adjacency list From the edges csv file to access the neighbours of a node using its ID
+     */
     unordered_map<int, vector<pair<int, float>>> adjList = adjList_from_edges(edges_csv);
 
     /*
-        To keep track of the nodes we need to examine and the nodes we've already examined I used two sets.
-        I used sets because I'm going to insert, erase, and find elements in those sets, and those operation in
+        openSet has the IDs of the nodes we need to test.
+        I used a set because I'm going to insert, erase, and find elements in those sets, and those operation in
         the unordered_set has an amortized time complexity of O(1) which makes them a perfect fit.
-        I have two sets that contains the IDs of the nodes, where openSet has the IDs of the nodes we need to test
-        and closedSet has the IDs of the nodes we've tested and we don't need to check them again.
+        Plus, Sets avoid duplicates, and that ensures we don't add the same nodeID twice to the openSet.
     */
     unordered_set<int> openSet = {startNodeID};
-    unordered_set<int> closedSet = {};
 
     // the main loop implementating the algorithm
     while (!openSet.empty())
@@ -83,15 +84,17 @@ vector<int> AStarAlgorithm(vector<vector<string>> edges_csv, vector<vector<strin
             return construct_path(nodes);
         }
 
-        exploreNeighbours(currNode, openSet, closedSet, adjList[currNode.id], nodes);
-
-        closedSet.emplace(top_node_ID);
         openSet.erase(top_node_ID);
+        exploreNeighbours(currNode, openSet, adjList[currNode.id], nodes);
     }
 
     return path;
 }
 
+/*
+    A function to store the nodes in a hashMap (unordered_map) where the key is the Node ID to access
+    any node using its ID in constant time.
+*/
 unordered_map<int, Node> nodes_from_csv(vector<vector<string>> nodes_csv)
 {
     unordered_map<int, Node> nodes;
@@ -112,6 +115,9 @@ unordered_map<int, Node> nodes_from_csv(vector<vector<string>> nodes_csv)
     return nodes;
 }
 
+/*
+    A function to create and adjacency list from the edges csv file to know what are the neighbours of each node
+*/
 unordered_map<int, vector<pair<int, float>>> adjList_from_edges(vector<vector<string>> edges_csv)
 {
     unordered_map<int, vector<pair<int, float>>> adjList;
@@ -126,28 +132,39 @@ unordered_map<int, vector<pair<int, float>>> adjList_from_edges(vector<vector<st
     return adjList;
 }
 
-void exploreNeighbours(Node &currNode, unordered_set<int> &openSet, unordered_set<int> &closedSet, vector<pair<int, float>> &neighbours, unordered_map<int, Node> &nodes)
+/*
+    A function to explore the neighbours of the node we're currently testing, and modifying the cost_to_reach
+    and the f_score of the neighbour nodes
+*/
+void exploreNeighbours(Node &currNode, unordered_set<int> &openSet, vector<pair<int, float>> &neighbours, unordered_map<int, Node> &nodes)
 {
     for (const auto &[neighbourID, edge_weight] : neighbours)
     {
         Node &neighbourNode = nodes[neighbourID];
         float tentative_cost = currNode.cost_to_reach + edge_weight;
+
         if (tentative_cost < neighbourNode.cost_to_reach)
         {
             neighbourNode.parent = &currNode;
             neighbourNode.cost_to_reach = tentative_cost;
             neighbourNode.f_score = tentative_cost + neighbourNode.heuristic;
-        }
 
-        bool neighbour_not_in_closedSet = (closedSet.find(neighbourID) == closedSet.end());
+            openSet.emplace(neighbourID); // since openSet is an unorderd_set it won't allow duplicates,
+                                          //  meaning if neighbourID is already in openSet it won't be added again.
 
-        if (neighbour_not_in_closedSet)
-        {
-            openSet.emplace(neighbourID);
+            /*
+                Decided to add the neighbourID to openSet if tentaive_cost < neigbhourNode.cost_to_reach
+                because if a node is reached by one path, removed from openSet, and subsequently reached
+                by a cheaper path, it will be added to openSet again. And that is essential to guarantee
+                that the path returned is optimal if the heuristic function is admissible but not consistent.
+            */
         }
     }
 }
 
+/*
+    A function to construct the output path by tracking the parents of the each node starting from the goal node.
+*/
 vector<int> construct_path(unordered_map<int, Node> &nodes)
 {
     vector<int> path;
