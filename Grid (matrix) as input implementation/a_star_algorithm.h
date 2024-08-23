@@ -1,6 +1,9 @@
 #include <queue>
 #include <limits>
 #include <unordered_map>
+#include <unordered_set>
+#include <algorithm>
+#include <array>
 
 class Node
 {
@@ -44,8 +47,9 @@ public:
 // Functions Declaration
 int nodeID_hash(int x, int y, int width);
 int calc_heuristic(const Node &currNode, int E_row, int E_col);
-void construct_path();
-vector<Node *> get_neighbours(int currRow, int currCol, int E_row, int E_col, vector<vector<char>>& grid, unordered_map<int, Node> &nodes);
+void construct_path(int E_row, int E_col, vector<vector<char>> &grid, unordered_map<int, Node> &nodes);
+void print_map(vector<vector<char>> &grid, unordered_set<int> &pathPoints);
+vector<Node *> get_neighbours(int currRow, int currCol, int E_row, int E_col, vector<vector<char>> &grid, unordered_map<int, Node> &nodes);
 
 // A-Star pathfinding algorithm implementation
 void AStar(vector<vector<char>> &grid, int S_row, int S_col, int E_row, int E_col)
@@ -68,15 +72,15 @@ void AStar(vector<vector<char>> &grid, int S_row, int S_col, int E_row, int E_co
         Node *currNode = openList.top();
         openList.pop();
 
-        cout << "processing: (" << currNode->row << ", " << currNode->col << ")" << endl;
-
         if (currNode->row == E_row && currNode->col == E_col)
-            return construct_path();
+            return construct_path(E_row, E_col, grid, nodes);
 
         vector<Node *> neighbours = get_neighbours(currNode->row, currNode->col, E_row, E_col, grid, nodes);
         int tentative_g_score = currNode->g_score + 1;
-        for(Node* neighbour : neighbours) {
-            if(tentative_g_score < neighbour->g_score) {
+        for (Node *neighbour : neighbours)
+        {
+            if (tentative_g_score < neighbour->g_score)
+            {
                 neighbour->g_score = tentative_g_score;
                 neighbour->f_score = tentative_g_score + neighbour->heuristic;
                 neighbour->parent = currNode;
@@ -97,12 +101,60 @@ int calc_heuristic(const Node &currNode, int E_row, int E_col)
     return abs(currNode.row - E_row) + abs(currNode.col - E_col);
 }
 
-void construct_path()
+void construct_path(int E_row, int E_col, vector<vector<char>> &grid, unordered_map<int, Node> &nodes)
 {
-    cout << "Goal Reached" << endl;
-}; // TODO:
+    unordered_set<int> pathPoints;
+    vector<array<int, 2>> path;
+    int grid_width = grid[0].size();
+    Node endNode = nodes[nodeID_hash(E_row, E_col, grid_width)];
+    Node currNode = endNode;
+    while (currNode.parent != nullptr)
+    {
+        array<int, 2> coordinates = {currNode.row, currNode.col};
+        path.push_back(coordinates);
+        pathPoints.emplace(currNode.row * grid_width + currNode.col);
+        currNode = *currNode.parent;
+    }
+    array<int, 2> coordinates = {currNode.row, currNode.col};
+    path.push_back(coordinates);
+    pathPoints.emplace(currNode.row * grid_width + currNode.col);
 
-vector<Node *> get_neighbours(int currRow, int currCol, int E_row, int E_col, vector<vector<char>>& grid, unordered_map<int, Node> &nodes)
+    reverse(path.begin(), path.end());
+
+    print_map(grid, pathPoints);
+    cout << "Goal Reached" << endl;
+
+    cout << "Path: " << endl;
+    for (const auto &point : path)
+    {
+        cout << "(" << point[0] << ", " << point[1] << ") ";
+    }
+    cout << endl;
+};
+
+void print_map(vector<vector<char>> &grid, unordered_set<int> &pathPoints)
+{
+    int grid_width = grid[0].size();
+    for (int row = 0; row < grid.size(); row++)
+    {
+        for (int col = 0; col < grid_width; col++)
+        {
+            if (pathPoints.find(row * grid_width + col) != pathPoints.end() && grid[row][col] != 'S' && grid[row][col] != 'E')
+            {
+                // cout << "\033[32m+\033[0m ";
+                cout << "# ";
+            }
+            else
+            {
+                cout << grid[row][col] << " ";
+            }
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+vector<Node *> get_neighbours(int currRow, int currCol, int E_row, int E_col, vector<vector<char>> &grid, unordered_map<int, Node> &nodes)
 {
     vector<Node *> neighbours;
     int grid_width = grid[0].size();
